@@ -74,11 +74,17 @@ class DTypePolicy:
 
 def load_sanitized_model(filepath):
     print(f"Loading model from {filepath}...")
-    return tf.keras.models.load_model(
-        filepath, 
-        custom_objects={'DTypePolicy': DTypePolicy}, 
-        compile=False
-    )
+    try:
+        return tf.keras.models.load_model(
+            filepath, 
+            custom_objects={'DTypePolicy': DTypePolicy}, 
+            compile=False
+        )
+    except Exception as e:
+        print(f"CRITICAL MODEL LOAD ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
 # Lazy loading dictionary optimized for Render 512MB RAM limit
 models = {}
