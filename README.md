@@ -51,4 +51,4 @@ neuroscan-ai/
 
 ## 🌐 Live Application
 You can try out the live version of NeuroScan AI here:
-👉  [**View Live Demo on Render**] : https://neuroscan-ai-mk80.onrender.com
+👉 [**View Live Demo on Render**](https://neuroscan-ai-mk80.onrender.com)
