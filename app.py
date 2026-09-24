@@ -73,8 +73,35 @@ class DTypePolicy:
         return {'name': self.name}
 
 def load_sanitized_model(filepath):
-    print(f"Loading model from {filepath}...")
+    print(f"Loading model from {filepath} with config sanitization...")
     try:
+        # Custom HDF5 modifier to strip unrecognized InputLayer arguments ('batch_shape', 'optional')
+        with h5py.File(filepath, 'r+') as f:
+            if 'model_config' in f.attrs:
+                model_config_str = f.attrs['model_config']
+                if isinstance(model_config_str, bytes):
+                    model_config_str = model_config_str.decode('utf-8')
+                
+                config_json = json.loads(model_config_str)
+                
+                # Recursively clean layers configuration
+                def clean_config(layer_node):
+                    if isinstance(layer_node, dict):
+                        if layer_node.get('class_name') == 'InputLayer' and 'config' in layer_node:
+                            # Remove arguments that cause modern deserialization crashes
+                            layer_node['config'].pop('batch_shape', None)
+                            layer_node['config'].pop('optional', None)
+                        for k, v in layer_node.items():
+                            clean_config(v)
+                    elif isinstance(layer_node, list):
+                        for item in layer_node:
+                            clean_config(item)
+                
+                clean_config(config_json)
+                
+                # Write back sanitized config
+                f.attrs['model_config'] = json.dumps(config_json).encode('utf-8')
+
         return tf.keras.models.load_model(
             filepath, 
             custom_objects={'DTypePolicy': DTypePolicy}, 
