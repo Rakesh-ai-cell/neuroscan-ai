@@ -56,7 +56,36 @@ else:
         ]
     }
 
-# --- DTYPE POLICY FOR COMPATIBILITY ---
+# --- ROBUST KERAS COMPATIBILITY PATCHES ---
+try:
+    original_vs_init = tf.keras.initializers.VarianceScaling.__init__
+    def safe_vs_init(self, *args, **kwargs):
+        kwargs.pop('input_axes', None)
+        original_vs_init(self, *args, **kwargs)
+    tf.keras.initializers.VarianceScaling.__init__ = safe_vs_init
+except Exception:
+    pass
+
+try:
+    original_glorot_init = tf.keras.initializers.GlorotUniform.__init__
+    def safe_glorot_init(self, *args, **kwargs):
+        kwargs.pop('input_axes', None)
+        original_glorot_init(self, *args, **kwargs)
+    tf.keras.initializers.GlorotUniform.__init__ = safe_glorot_init
+except Exception:
+    pass
+
+try:
+    original_conv2d_init = tf.keras.layers.Conv2D.__init__
+    def safe_conv2d_init(self, *args, **kwargs):
+        kwargs.pop('input_axes', None)
+        kwargs.pop('optional', None)
+        kwargs.pop('batch_shape', None)
+        original_conv2d_init(self, *args, **kwargs)
+    tf.keras.layers.Conv2D.__init__ = safe_conv2d_init
+except Exception:
+    pass
+
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
         self.name = name
@@ -79,7 +108,6 @@ def load_sanitized_model(filepath):
         raise FileNotFoundError(f"Model file missing: {filepath}")
         
     try:
-        # Custom HDF5 modifier to strip unrecognized InputLayer arguments
         with h5py.File(filepath, 'r+') as f:
             if 'model_config' in f.attrs:
                 model_config_str = f.attrs['model_config']
@@ -88,15 +116,15 @@ def load_sanitized_model(filepath):
                 
                 config_json = json.loads(model_config_str)
                 
-                def clean_config(layer_node):
-                    if isinstance(layer_node, dict):
-                        if layer_node.get('class_name') == 'InputLayer' and 'config' in layer_node:
-                            layer_node['config'].pop('batch_shape', None)
-                            layer_node['config'].pop('optional', None)
-                        for k, v in layer_node.items():
+                def clean_config(node):
+                    if isinstance(node, dict):
+                        for key in ['batch_shape', 'optional', 'input_axes']:
+                            if key in node:
+                                node.pop(key, None)
+                        for k, v in node.items():
                             clean_config(v)
-                    elif isinstance(layer_node, list):
-                        for item in layer_node:
+                    elif isinstance(node, list):
+                        for item in node:
                             clean_config(item)
                 
                 clean_config(config_json)
