@@ -6,3 +6,4 @@ pillow>=10.0.0
 matplotlib>=3.8.0
 scikit-learn>=1.4.0
 opencv-python>=4.9.0
+gunicorn
