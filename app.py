@@ -57,7 +57,17 @@ else:
         ]
     }
 
-# --- CUSTOM OBJECTS FIX FOR DTYPE POLICY & INPUTLAYER ---
+# --- ADVANCED KERAS DESERIALIZATION FIX ---
+from tensorflow.keras.initializers import GlorotUniform
+
+original_glorot_init = GlorotUniform.__init__
+
+def patched_glorot_init(self, *args, **kwargs):
+    kwargs.pop('input_axes', None)
+    original_glorot_init(self, *args, **kwargs)
+
+GlorotUniform.__init__ = patched_glorot_init
+
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
         self.name = name
