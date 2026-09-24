@@ -5,7 +5,6 @@ from flask import Flask, render_template, request, redirect, url_for, send_file,
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import cv2
@@ -57,7 +56,7 @@ else:
         ]
     }
 
-# --- UNIVERSAL SANITIZED MODEL LOADER & DTYPE POLICY ---
+# --- DTYPE POLICY FOR COMPATIBILITY ---
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
         self.name = name
@@ -74,47 +73,21 @@ class DTypePolicy:
         return {'name': self.name}
 
 def load_sanitized_model(filepath):
-    print(f"Loading and sanitizing model from {filepath}...")
-    with h5py.File(filepath, 'r') as f:
-        if 'model_config' in f.attrs:
-            config_str = f.attrs['model_config']
-            if isinstance(config_str, bytes):
-                config_str = config_str.decode('utf-8')
-            config_dict = json.loads(config_str)
-            
-            def clean_config(d):
-                if isinstance(d, dict):
-                    keys_to_remove = [
-                        'input_axes', 'output_axes', 'quantization_config', 
-                        'ragged', 'optional', 'batch_shape'
-                    ]
-                    for k in keys_to_remove:
-                        d.pop(k, None)
-                    for k, v in d.items():
-                        clean_config(v)
-                elif isinstance(d, list):
-                    for item in d:
-                        clean_config(item)
-            
-            clean_config(config_dict)
-            
-            custom_objects = {'DTypePolicy': DTypePolicy}
-            model = model_from_json(json.dumps(config_dict), custom_objects=custom_objects)
-            model.load_weights(filepath)
-            return model
-        else:
-            return tf.keras.models.load_model(filepath, custom_objects={'DTypePolicy': DTypePolicy}, safe_mode=False)
+    print(f"Loading model from {filepath}...")
+    return tf.keras.models.load_model(
+        filepath, 
+        custom_objects={'DTypePolicy': DTypePolicy}, 
+        compile=False
+    )
 
-# Lazy loading dictionary optimized for Render 512MB RAM limit (Loads only DenseNet121)
+# Lazy loading dictionary optimized for Render 512MB RAM limit
 models = {}
 
 def get_model(model_name):
-    # Force fallback to DenseNet121 for MobileNetV2 and VGG16 requests to prevent Out-Of-Memory crashes on Render
     if model_name not in ['DenseNet121', 'MobileNetV2', 'VGG16']:
         model_name = 'DenseNet121'
         
     if model_name not in models:
-        # We point all secondary UI requests to DenseNet121 weights or load it once
         model_path = 'models/densenet_model.h5'
         models[model_name] = load_sanitized_model(model_path)
     return models[model_name]
@@ -182,7 +155,6 @@ def process_image_and_predict(filepath, filename):
 
     results = {}
     try:
-        # Run inference using DenseNet121 model safely within RAM limits
         model = get_model('DenseNet121')
         preds = model.predict(x)
         class_idx = np.argmax(preds[0])
@@ -193,7 +165,6 @@ def process_image_and_predict(filepath, filename):
         else:
             pred_label = CLASSES[class_idx]
             
-        # Populate all three ensemble table keys to keep UI intact without extra RAM overhead
         results['DenseNet121'] = {
             'prediction': pred_label,
             'confidence': round(confidence, 2)
