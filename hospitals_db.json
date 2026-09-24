@@ -1,0 +1,124 @@
+{
+  "Asia": [
+    {
+      "hospital_name": "All India Institute of Medical Sciences (AIIMS)",
+      "location": "New Delhi, India",
+      "specialty": "Department of Neurosurgery & Neuro-Oncology",
+      "website": "https://www.aiims.edu",
+      "doctors": [
+        { "name": "Dr. P. Sarat Chandra", "role": "Professor & Head of Neurosurgery", "contact": "AIIMS OPD Portal" },
+        { "name": "Dr. Ashish Suri", "role": "Professor of Neurosurgery & Skull Base Surgery", "contact": "AIIMS Patient Care Portal" }
+      ]
+    },
+    {
+      "hospital_name": "The University of Tokyo Hospital",
+      "location": "Tokyo, Japan",
+      "specialty": "Department of Neurosurgery",
+      "website": "https://www.h.u-tokyo.ac.jp/english/",
+      "doctors": [
+        { "name": "Prof. Nobuhito Saito", "role": "Director & Chief of Neurosurgery", "contact": "UTokyo International Medical Center" }
+      ]
+    }
+  ],
+  "Europe": [
+    {
+      "hospital_name": "Charité – Universitätsmedizin Berlin",
+      "location": "Berlin, Germany",
+      "specialty": "Department of Neurosurgery & Neuro-Oncology",
+      "website": "https://www.charite.de/en/",
+      "doctors": [
+        { "name": "Prof. Dr. Peter Vajkoczy", "role": "Director of Department of Neurosurgery", "contact": "Charité International Medicine Desk" }
+      ]
+    },
+    {
+      "hospital_name": "National Hospital for Neurology and Neurosurgery (UCLH)",
+      "location": "London, United Kingdom",
+      "specialty": "Lysholm Department of Neuroradiology & Neurosurgery",
+      "website": "https://www.uclh.nhs.uk",
+      "doctors": [
+        { "name": "Mr. Neil Kitchen", "role": "Consultant Neurosurgeon", "contact": "UCLH Private Healthcare" }
+      ]
+    }
+  ],
+  "North America": [
+    {
+      "hospital_name": "Mayo Clinic",
+      "location": "Rochester, Minnesota, USA",
+      "specialty": "Department of Neurologic Surgery",
+      "website": "https://www.mayoclinic.org",
+      "doctors": [
+        { "name": "Dr. Alfredo Quinones-Hinojosa", "role": "Chair of Neurologic Surgery", "contact": "Mayo Clinic Patient Appointment Services" },
+        { "name": "Dr. Michael Link", "role": "Consultant Neurosurgeon", "contact": "Mayo Clinic Brain Tumor Program Desk" }
+      ]
+    },
+    {
+      "hospital_name": "Johns Hopkins Hospital",
+      "location": "Baltimore, Maryland, USA",
+      "specialty": "Comprehensive Brain Tumor Center",
+      "website": "https://www.hopkinsmedicine.org",
+      "doctors": [
+        { "name": "Dr. Henry Brem", "role": "Director of Neurosurgery", "contact": "Johns Hopkins International Access Desk" }
+      ]
+    }
+  ],
+  "South America": [
+    {
+      "hospital_name": "Hospital Israelita Albert Einstein",
+      "location": "São Paulo, Brazil",
+      "specialty": "Neuro-Oncology & Skull Base Surgery Center",
+      "website": "https://www.einstein.br/en",
+      "doctors": [
+        { "name": "Dr. Fernando Campos", "role": "Head of Neuro-Oncology", "contact": "Albert Einstein International Patient Center" }
+      ]
+    },
+    {
+      "hospital_name": "Hospital Sírio-Libanês",
+      "location": "São Paulo, Brazil",
+      "specialty": "Center for Neurology and Neurosurgery",
+      "website": "https://www.hospitalsiriolibanes.org.br",
+      "doctors": [
+        { "name": "Dr. Marcos Vinicius Calfat", "role": "Chief Neurosurgeon", "contact": "Sírio-Libanês Medical Access" }
+      ]
+    }
+  ],
+  "Africa": [
+    {
+      "hospital_name": "Groote Schuur Hospital / University of Cape Town",
+      "location": "Cape Town, South Africa",
+      "specialty": "Division of Neurosurgery",
+      "website": "https://www.westerncape.gov.za/dept/health",
+      "doctors": [
+        { "name": "Prof. Graham Fieggen", "role": "Head of Neurosurgery", "contact": "UCT Medical Specialist Referral" }
+      ]
+    },
+    {
+      "hospital_name": "As-Salam International Hospital",
+      "location": "Cairo, Egypt",
+      "specialty": "Neuroscience & Brain Tumor Center",
+      "website": "https://www.assalamhospital.com",
+      "doctors": [
+        { "name": "Dr. Ahmed Zohdi", "role": "Senior Consultant Neurosurgeon", "contact": "As-Salam International Appointments" }
+      ]
+    }
+  ],
+  "Australia / Oceania": [
+    {
+      "hospital_name": "Royal Melbourne Hospital",
+      "location": "Melbourne, Victoria, Australia",
+      "specialty": "Department of Neurosurgery",
+      "website": "https://www.thermh.org.au",
+      "doctors": [
+        { "name": "Prof. Kate Drummond", "role": "Director of Neurosurgery & Neuro-Oncologist", "contact": "RMH Specialist Referral Office" }
+      ]
+    },
+    {
+      "hospital_name": "Royal Prince Alfred Hospital (RPA)",
+      "location": "Sydney, NSW, Australia",
+      "specialty": "Sydney Neuro-Oncology Group Center",
+      "website": "https://www.slhd.nsw.gov.au/rpa/",
+      "doctors": [
+        { "name": "Dr. Michael Sughrue", "role": "Consultant Neurosurgeon", "contact": "RPA Outpatient Neurosurgery Desk" }
+      ]
+    }
+  ]
+}

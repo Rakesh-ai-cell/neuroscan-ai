@@ -1,0 +1,8 @@
+flask>=3.0.0
+tensorflow>=2.15.0
+keras>=3.0.0
+numpy>=1.26.0
+pillow>=10.0.0
+matplotlib>=3.8.0
+scikit-learn>=1.4.0
+opencv-python>=4.9.0
