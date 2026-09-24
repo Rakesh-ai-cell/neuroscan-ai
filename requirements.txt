@@ -8,3 +8,4 @@ scikit-learn>=1.4.0
 opencv-python>=4.9.0
 gunicorn
 flask-cors
+pydicom
