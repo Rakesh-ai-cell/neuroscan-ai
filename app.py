@@ -57,11 +57,11 @@ else:
         ]
     }
 
-# Load top reliable models into a dictionary for comparison
+# Load top reliable models safely using safe_mode=False to bypass Keras config version mismatches
 models = {
-    'DenseNet121': load_model('models/densenet_model.h5'),
-    'MobileNetV2': load_model('models/mobilenet_model.h5'),
-    'VGG16': load_model('models/vgg16_model.h5')
+    'DenseNet121': load_model('models/densenet_model.h5', safe_mode=False),
+    'MobileNetV2': load_model('models/mobilenet_model.h5', safe_mode=False),
+    'VGG16': load_model('models/vgg16_model.h5', safe_mode=False)
 }
 
 # Dynamically load all 48 class labels
