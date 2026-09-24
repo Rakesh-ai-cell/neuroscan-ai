@@ -30,12 +30,12 @@ You can try out the live version of NeuroScan AI here:
 
 ### Web Dashboard Preview
 <p align="center">
-  <img src="https://github.com/Rakesh-ai-cell/neuroscan-ai/assets/127.0.0.1-predict_2.jpg" width="700" alt="NeuroScan AI Dashboard Preview">
+  <img src="https://raw.githubusercontent.com/Rakesh-ai-cell/neuroscan-ai/main/static/dashboard_preview.jpg" width="700" alt="NeuroScan AI Dashboard Preview">
 </p>
 
 ### Clinical PDF Report Sample
 <p align="center">
-  <img src="https://github.com/Rakesh-ai-cell/neuroscan-ai/assets/diagnostic_report.jpg" width="700" alt="Diagnostic Report Sample">
+  <img src="https://raw.githubusercontent.com/Rakesh-ai-cell/neuroscan-ai/main/static/diagnostic_report.jpg" width="700" alt="Diagnostic Report Sample">
 </p>
 
 ---
