@@ -9,3 +9,6 @@ opencv-python>=4.9.0
 gunicorn
 flask-cors
 pydicom
+reportlab
+scipy
+pandas
