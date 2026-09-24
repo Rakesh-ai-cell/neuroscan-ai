@@ -48,3 +48,7 @@ neuroscan-ai/
 ├── hospitals_db.json       # Global hospital referral directory matching continental schemas
 ├── requirements.txt        # Project dependencies
 └── README.md               # Project documentation<img width="1065" height="2549" alt="127 0 0 1-predict" src="https://github.com/user-attachments/assets/63c7e50a-b3d4-4d26-907d-78650f33b9dd" />
+
+## 🌐 Live Application
+You can try out the live version of NeuroScan AI here:
+👉 **[View Live Demo on Render](https://neuroscan-ai-mk80.onrender.com)**
