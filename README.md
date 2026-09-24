@@ -1,4 +1,4 @@
-# NeuroScan AI 🧠⚡<img width="1065" height="2549" alt="127 0 0 1-predict" src="https://github.com/user-attachments/assets/6c70f2b9-da0b-48ff-ac9e-bcfa3d190337" />
+# NeuroScan AI 🧠⚡
 
 > Multi-Model Ensemble Brain Tumor Classification & Visual Explainability System
 
