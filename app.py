@@ -73,9 +73,13 @@ class DTypePolicy:
         return {'name': self.name}
 
 def load_sanitized_model(filepath):
-    print(f"Loading model from {filepath} with config sanitization...")
+    print(f"Attempting to load model from: {filepath}")
+    if not os.path.exists(filepath):
+        print(f"CRITICAL ERROR: Model file not found at {filepath}")
+        raise FileNotFoundError(f"Model file missing: {filepath}")
+        
     try:
-        # Custom HDF5 modifier to strip unrecognized InputLayer arguments ('batch_shape', 'optional')
+        # Custom HDF5 modifier to strip unrecognized InputLayer arguments
         with h5py.File(filepath, 'r+') as f:
             if 'model_config' in f.attrs:
                 model_config_str = f.attrs['model_config']
@@ -84,11 +88,9 @@ def load_sanitized_model(filepath):
                 
                 config_json = json.loads(model_config_str)
                 
-                # Recursively clean layers configuration
                 def clean_config(layer_node):
                     if isinstance(layer_node, dict):
                         if layer_node.get('class_name') == 'InputLayer' and 'config' in layer_node:
-                            # Remove arguments that cause modern deserialization crashes
                             layer_node['config'].pop('batch_shape', None)
                             layer_node['config'].pop('optional', None)
                         for k, v in layer_node.items():
@@ -98,15 +100,15 @@ def load_sanitized_model(filepath):
                             clean_config(item)
                 
                 clean_config(config_json)
-                
-                # Write back sanitized config
                 f.attrs['model_config'] = json.dumps(config_json).encode('utf-8')
 
-        return tf.keras.models.load_model(
+        model = tf.keras.models.load_model(
             filepath, 
             custom_objects={'DTypePolicy': DTypePolicy}, 
             compile=False
         )
+        print("Model loaded and sanitized successfully!")
+        return model
     except Exception as e:
         print(f"CRITICAL MODEL LOAD ERROR: {str(e)}")
         import traceback
@@ -126,7 +128,7 @@ def get_model(model_name):
     return models[model_name]
 # --------------------------------------------------------
 
-# Dynamically load all 48 class labels
+# Dynamically load all class labels
 train_gen, _, _ = get_data_generators()
 CLASSES = list(train_gen.class_indices.keys())
 
@@ -212,12 +214,15 @@ def process_image_and_predict(filepath, filename):
         }
     except Exception as e:
         print("Prediction execution error:", e)
+        import traceback
+        traceback.print_exc()
         results['DenseNet121'] = {'prediction': 'Error processing model', 'confidence': 0.0}
         results['MobileNetV2'] = {'prediction': 'Error processing model', 'confidence': 0.0}
         results['VGG16'] = {'prediction': 'Error processing model', 'confidence': 0.0}
     
     latest_results = results
 
+    # Safe Grad-CAM generation (isolated so it never blocks predictions)
     cam_filename = None
     try:
         densenet_model = get_model('DenseNet121')
@@ -225,18 +230,27 @@ def process_image_and_predict(filepath, filename):
         x_cam = np.expand_dims(image.img_to_array(img_cam) / 255.0, axis=0)
         
         last_conv_layer_name = "conv5_block16_concat"
+        layer_names = [layer.name for layer in densenet_model.layers]
+        if last_conv_layer_name not in layer_names:
+            for layer in reversed(densenet_model.layers):
+                if isinstance(layer, tf.keras.layers.Concatenate) or 'conv' in layer.name:
+                    last_conv_layer_name = layer.name
+                    break
+
         heatmap = make_gradcam_heatmap(x_cam, densenet_model, last_conv_layer_name)
         
         cam_filename = "cam_" + filename
         cam_path = os.path.join(app.config['UPLOAD_FOLDER'], cam_filename)
         
         original_img = cv2.imread(filepath)
-        heatmap_resized = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
-        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
-        superimposed = cv2.addWeighted(original_img, 0.6, heatmap_colored, 0.4, 0)
-        cv2.imwrite(cam_path, superimposed)
+        if original_img is not None:
+            heatmap_resized = cv2.resize(heatmap, (original_img.shape[1], original_img.shape[0]))
+            heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
+            superimposed = cv2.addWeighted(original_img, 0.6, heatmap_colored, 0.4, 0)
+            cv2.imwrite(cam_path, superimposed)
     except Exception as e:
-        print("Grad-CAM generation error:", e)
+        print("Grad-CAM generation error (non-fatal):", e)
+        cam_filename = None
 
     latest_cam_file = cam_filename
     return results, filename, cam_filename
