@@ -57,7 +57,16 @@ else:
         ]
     }
 
-# --- UNIVERSAL PATCH FOR KERAS INPUTLAYER DESERIALIZATION ---
+# --- CUSTOM OBJECTS FIX FOR DTYPE POLICY & INPUTLAYER ---
+class DTypePolicy:
+    def __init__(self, name='float32', *args, **kwargs):
+        self.name = name
+    @classmethod
+    def from_config(cls, config):
+        if isinstance(config, dict):
+            return cls(config.get('name', 'float32'))
+        return cls(config)
+
 original_from_config = InputLayer.from_config
 
 def patched_from_config(cls, config):
@@ -70,13 +79,17 @@ def patched_from_config(cls, config):
     return original_from_config(config)
 
 InputLayer.from_config = classmethod(patched_from_config)
-# -----------------------------------------------------------
 
-# Load models safely with the patch active
+custom_objects = {
+    'DTypePolicy': DTypePolicy
+}
+# --------------------------------------------------------
+
+# Load models safely with custom objects mapping
 models = {
-    'DenseNet121': load_model('models/densenet_model.h5', safe_mode=False),
-    'MobileNetV2': load_model('models/mobilenet_model.h5', safe_mode=False),
-    'VGG16': load_model('models/vgg16_model.h5', safe_mode=False)
+    'DenseNet121': load_model('models/densenet_model.h5', custom_objects=custom_objects, safe_mode=False),
+    'MobileNetV2': load_model('models/mobilenet_model.h5', custom_objects=custom_objects, safe_mode=False),
+    'VGG16': load_model('models/vgg16_model.h5', custom_objects=custom_objects, safe_mode=False)
 }
 
 # Dynamically load all 48 class labels
