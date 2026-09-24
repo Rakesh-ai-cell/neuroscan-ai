@@ -5,7 +5,6 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import cv2
@@ -42,7 +41,6 @@ if os.path.exists('hospitals_db.json'):
     with open('hospitals_db.json', 'r') as f:
         HOSPITALS_DB = json.load(f)
 else:
-    # Fallback default dictionary following your provided structure
     HOSPITALS_DB = {
         "Asia": [
             {
@@ -58,25 +56,11 @@ else:
         ]
     }
 
-# --- FIX FOR KERAS INPUTLAYER VERSION MISMATCH ON RENDER ---
-original_from_config = InputLayer.from_config
-
-def patched_from_config(cls, config):
-    if 'batch_shape' in config and 'batch_size' not in config:
-        config['batch_size'] = config['batch_shape'][0]
-        config['input_shape'] = config['batch_shape'][1:]
-    config.pop('batch_shape', None)
-    config.pop('optional', None)
-    return original_from_config(config)
-
-InputLayer.from_config = classmethod(patched_from_config)
-# -----------------------------------------------------------
-
-# Load top reliable models into a dictionary for comparison
+# Load models natively with matching TensorFlow version
 models = {
-    'DenseNet121': load_model('models/densenet_model.h5', safe_mode=False),
-    'MobileNetV2': load_model('models/mobilenet_model.h5', safe_mode=False),
-    'VGG16': load_model('models/vgg16_model.h5', safe_mode=False)
+    'DenseNet121': load_model('models/densenet_model.h5'),
+    'MobileNetV2': load_model('models/mobilenet_model.h5'),
+    'VGG16': load_model('models/vgg16_model.h5')
 }
 
 # Dynamically load all 48 class labels
@@ -102,15 +86,12 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None
     return heatmap.numpy()
 
 def process_image_and_predict(filepath, filename):
-    """Helper function to handle DICOM/image conversion, predictions, and Grad-CAM generation."""
     global latest_results, latest_image_file, latest_cam_file
     global latest_patient_id, latest_patient_age_gender, latest_scan_modality
 
-    # Advanced DICOM Handling (.dcm files)
     if filename.lower().endswith('.dcm'):
         try:
             dicom_data = pydicom.dcmread(filepath)
-            
             if hasattr(dicom_data, 'PatientID') and dicom_data.PatientID:
                 latest_patient_id = str(dicom_data.PatientID)
             
@@ -137,13 +118,11 @@ def process_image_and_predict(filepath, filename):
 
     latest_image_file = filename
 
-    # Preprocess image for model prediction
     img = image.load_img(filepath, target_size=(150, 150))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = x / 255.0
 
-    # Run ensemble predictions with confidence thresholding
     results = {}
     for name, model in models.items():
         preds = model.predict(x)
@@ -163,7 +142,6 @@ def process_image_and_predict(filepath, filename):
     
     latest_results = results
 
-    # Generate Grad-CAM Heatmap using DenseNet121
     cam_filename = None
     try:
         densenet_model = models['DenseNet121']
@@ -217,7 +195,6 @@ def predict():
 
 @app.route('/api/predict', methods=['POST'])
 def api_predict():
-    """Decoupled JSON API endpoint for Next.js with continent-based hospital matching."""
     global latest_patient_id, latest_patient_age_gender, latest_scan_modality, latest_patient_continent
 
     latest_patient_id = request.form.get('patient_id', 'N/A')
@@ -321,7 +298,6 @@ def download_report():
 
     story.append(Spacer(1, 10))
 
-    # Add Recommended Hospital / Referral Centers Section
     story.append(Paragraph(f"Recommended Specialist Facilities ({latest_patient_continent})", heading_style))
     hospitals_list = HOSPITALS_DB.get(latest_patient_continent, HOSPITALS_DB.get('Asia', []))
     
@@ -331,7 +307,6 @@ def download_report():
             h_name = h.get('hospital_name', h.get('name', 'N/A'))
             location = h.get('location', '')
             specialty = h.get('specialty', '')
-            website = h.get('website', '')
             doctors = h.get('doctors', [])
             
             doc_strings = []
