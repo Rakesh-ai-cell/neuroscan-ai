@@ -57,16 +57,18 @@ else:
         ]
     }
 
-# --- ADVANCED KERAS DESERIALIZATION FIX ---
-from tensorflow.keras.initializers import GlorotUniform
+# --- ROBUST KERAS INITIALIZER PATCH ---
+from tensorflow.keras.initializers import GlorotUniform, VarianceScaling
 
-original_glorot_init = GlorotUniform.__init__
-
-def patched_glorot_init(self, *args, **kwargs):
-    kwargs.pop('input_axes', None)
-    original_glorot_init(self, *args, **kwargs)
-
-GlorotUniform.__init__ = patched_glorot_init
+for initializer_cls in [GlorotUniform, VarianceScaling]:
+    orig_init = initializer_cls.__init__
+    def create_patched_init(original):
+        def patched_init(self, *args, **kwargs):
+            kwargs.pop('input_axes', None)
+            kwargs.pop('output_axes', None)
+            original(self, *args, **kwargs)
+        return patched_init
+    initializer_cls.__init__ = create_patched_init(orig_init)
 
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
@@ -80,8 +82,7 @@ class DTypePolicy:
             return cls(config.get('name', 'float32'))
         return cls(config)
 
-    def get_config(self):
-        return {'name': self.name}
+    get_config = lambda self: {'name': self.name}
 
 original_from_config = InputLayer.from_config
 
@@ -99,7 +100,8 @@ InputLayer.from_config = classmethod(patched_from_config)
 custom_objects = {
     'DTypePolicy': DTypePolicy
 }
-# --------------------------------------------------------
+# ------------------------------------
+
 
 # Load models safely with custom objects mapping
 models = {
