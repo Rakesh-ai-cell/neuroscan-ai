@@ -1,11 +1,11 @@
 import os
 import json
+import h5py
 from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import InputLayer
+from tensorflow.keras.models import model_from_json
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import cv2
@@ -57,19 +57,7 @@ else:
         ]
     }
 
-# --- ROBUST KERAS INITIALIZER PATCH ---
-from tensorflow.keras.initializers import GlorotUniform, VarianceScaling
-
-for initializer_cls in [GlorotUniform, VarianceScaling]:
-    orig_init = initializer_cls.__init__
-    def create_patched_init(original):
-        def patched_init(self, *args, **kwargs):
-            kwargs.pop('input_axes', None)
-            kwargs.pop('output_axes', None)
-            original(self, *args, **kwargs)
-        return patched_init
-    initializer_cls.__init__ = create_patched_init(orig_init)
-
+# --- UNIVERSAL SANITIZED MODEL LOADER & DTYPE POLICY ---
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
         self.name = name
@@ -82,33 +70,54 @@ class DTypePolicy:
             return cls(config.get('name', 'float32'))
         return cls(config)
 
-    get_config = lambda self: {'name': self.name}
+    def get_config(self):
+        return {'name': self.name}
 
-original_from_config = InputLayer.from_config
+def load_sanitized_model(filepath):
+    print(f"Loading and sanitizing model from {filepath}...")
+    with h5py.File(filepath, 'r') as f:
+        if 'model_config' in f.attrs:
+            config_str = f.attrs['model_config']
+            if isinstance(config_str, bytes):
+                config_str = config_str.decode('utf-8')
+            config_dict = json.loads(config_str)
+            
+            def clean_config(d):
+                if isinstance(d, dict):
+                    keys_to_remove = [
+                        'input_axes', 'output_axes', 'quantization_config', 
+                        'ragged', 'optional', 'batch_shape'
+                    ]
+                    for k in keys_to_remove:
+                        d.pop(k, None)
+                    for k, v in d.items():
+                        clean_config(v)
+                elif isinstance(d, list):
+                    for item in d:
+                        clean_config(item)
+            
+            clean_config(config_dict)
+            
+            custom_objects = {'DTypePolicy': DTypePolicy}
+            model = model_from_json(json.dumps(config_dict), custom_objects=custom_objects)
+            model.load_weights(filepath)
+            return model
+        else:
+            return tf.keras.models.load_model(filepath, custom_objects={'DTypePolicy': DTypePolicy}, safe_mode=False)
 
-def patched_from_config(cls, config):
-    if 'batch_shape' in config and 'batch_size' not in config:
-        config['batch_size'] = config['batch_shape'][0]
-        config['input_shape'] = config['batch_shape'][1:]
-    config.pop('batch_shape', None)
-    config.pop('optional', None)
-    config.pop('ragged', None)
-    return original_from_config(config)
+# Lazy loading dictionary for Render memory & performance optimization
+models = {}
 
-InputLayer.from_config = classmethod(patched_from_config)
-
-custom_objects = {
-    'DTypePolicy': DTypePolicy
-}
-# ------------------------------------
-
-
-# Load models safely with custom objects mapping
-models = {
-    'DenseNet121': load_model('models/densenet_model.h5', custom_objects=custom_objects, safe_mode=False),
-    'MobileNetV2': load_model('models/mobilenet_model.h5', custom_objects=custom_objects, safe_mode=False),
-    'VGG16': load_model('models/vgg16_model.h5', custom_objects=custom_objects, safe_mode=False)
-}
+def get_model(model_name):
+    if model_name not in models:
+        model_path = {
+            'DenseNet121': 'models/densenet_model.h5',
+            'MobileNetV2': 'models/mobilenet_model.h5',
+            'VGG16': 'models/vgg16_model.h5'
+        }[model_name]
+        models[model_name] = load_sanitized_model(model_path)
+    return models[model_name]
+# --------------------------------------------------------
 
 # Dynamically load all 48 class labels
 train_gen, _, _ = get_data_generators()
@@ -171,7 +180,8 @@ def process_image_and_predict(filepath, filename):
     x = x / 255.0
 
     results = {}
-    for name, model in models.items():
+    for name in ['DenseNet121', 'MobileNetV2', 'VGG16']:
+        model = get_model(name)
         preds = model.predict(x)
         class_idx = np.argmax(preds[0])
         confidence = float(np.max(preds[0])) * 100
@@ -191,7 +201,7 @@ def process_image_and_predict(filepath, filename):
 
     cam_filename = None
     try:
-        densenet_model = models['DenseNet121']
+        densenet_model = get_model('DenseNet121')
         img_cam = image.load_img(filepath, target_size=(150, 150))
         x_cam = np.expand_dims(image.img_to_array(img_cam) / 255.0, axis=0)
         
