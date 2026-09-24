@@ -5,6 +5,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import InputLayer
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import cv2
@@ -57,7 +58,21 @@ else:
         ]
     }
 
-# Load top reliable models safely using safe_mode=False to bypass Keras config version mismatches
+# --- FIX FOR KERAS INPUTLAYER VERSION MISMATCH ON RENDER ---
+original_from_config = InputLayer.from_config
+
+def patched_from_config(cls, config):
+    if 'batch_shape' in config and 'batch_size' not in config:
+        config['batch_size'] = config['batch_shape'][0]
+        config['input_shape'] = config['batch_shape'][1:]
+    config.pop('batch_shape', None)
+    config.pop('optional', None)
+    return original_from_config(config)
+
+InputLayer.from_config = classmethod(patched_from_config)
+# -----------------------------------------------------------
+
+# Load top reliable models into a dictionary for comparison
 models = {
     'DenseNet121': load_model('models/densenet_model.h5', safe_mode=False),
     'MobileNetV2': load_model('models/mobilenet_model.h5', safe_mode=False),
