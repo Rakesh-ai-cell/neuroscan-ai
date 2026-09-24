@@ -61,11 +61,17 @@ else:
 class DTypePolicy:
     def __init__(self, name='float32', *args, **kwargs):
         self.name = name
+        self.compute_dtype = name
+        self.variable_dtype = name
+
     @classmethod
     def from_config(cls, config):
         if isinstance(config, dict):
             return cls(config.get('name', 'float32'))
         return cls(config)
+
+    def get_config(self):
+        return {'name': self.name}
 
 original_from_config = InputLayer.from_config
 
